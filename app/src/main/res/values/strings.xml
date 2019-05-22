@@ -1,0 +1,18 @@
+<resources>
+    <string name="app_name">FastLabelCapture</string>
+
+    <string name="picture">Foto</string>
+    <string name="description_info">Info</string>
+
+    <string name="camera_permission_required">Es necesario dar permisos de uso de cámara.</string>
+
+    <string name="image_label">Etiqueta:</string>
+    <string name="user_name">Usuario: </string>
+    <string name="resolution1_1">1:1</string>
+    <string name="resolution4_3">4:3</string>
+
+    <!-- TODO: Remove or change this placeholder text -->
+    <string name="hello_blank_fragment">Hello blank fragment</string>
+    <string name="camera_error">Este dispositivo no soporta la Camera2 API.</string>
+
+</resources>
