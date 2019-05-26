@@ -26,6 +26,7 @@ import android.hardware.camera2.params.StreamConfigurationMap;
 import android.media.Image;
 import android.media.ImageReader;
 import android.os.Bundle;
+import android.os.CountDownTimer;
 import android.os.Handler;
 import android.os.HandlerThread;
 import android.support.annotation.NonNull;
@@ -229,6 +230,13 @@ public class CameraFragment extends Fragment
     private EditText userFolderName;
     private EditText fileName;
 
+    private boolean atLeastOneCapturedImageOnThisSesion = false;
+    private boolean theLastImageWasDeleted = false;
+    private String lastFileName;
+    private String lastUser;
+
+    private EditText delayForTakePicture;
+
     private RectangleView mRectangleView;
 
     /**
@@ -248,30 +256,35 @@ public class CameraFragment extends Fragment
             int existingMatchingFiles = 0;
 
             File mFolder = new File(getActivity().getExternalFilesDir(null), userFolderNameStr);
-            if(!mFolder.exists())
+            if (!mFolder.exists())
                 success = mFolder.mkdir();
             else
                 success = true;
 
-            if(success){
+            if (success) {
                 File[] listOfFiles = mFolder.listFiles();
                 Log.i("Exist file", String.valueOf(listOfFiles.length));
-                for(File file : listOfFiles){
+                for (File file : listOfFiles) {
                     Log.i("Exist file", file.getName());
-                    if (file.getName().startsWith(fileNameStr)){
+                    if (file.getName().startsWith(fileNameStr)) {
                         existingMatchingFiles += 1;
                     }
                 }
             }
 
-            fileNameStr = fileNameStr + "_" + String.valueOf(existingMatchingFiles+1);
+            fileNameStr = fileNameStr + "_" + (existingMatchingFiles + 1);
 
             mFile = new File(getActivity().getExternalFilesDir(null), userFolderNameStr + File.separator + fileNameStr + ".jpg");
 
-            if(mRectangleView.enoughDimension)
+            if (mRectangleView.enoughDimension)
                 mBackgroundHandler.post(new ImageSaver(reader.acquireNextImage(), userFolderNameStr, fileNameStr, mFile, mRectangleView, imgFileDB));
             else
                 mBackgroundHandler.post(new ImageSaver(reader.acquireNextImage(), userFolderNameStr, fileNameStr, mFile, null, imgFileDB));
+
+            atLeastOneCapturedImageOnThisSesion = true;
+            theLastImageWasDeleted = false;
+            lastFileName = fileNameStr;
+            lastUser = userFolderNameStr;
         }
 
     };
@@ -461,8 +474,10 @@ public class CameraFragment extends Fragment
     @Override
     public void onViewCreated(final View view, Bundle savedInstanceState) {
         view.findViewById(R.id.picture).setOnClickListener(this);
-        view.findViewById(R.id.info).setOnClickListener(this);
+        view.findViewById(R.id.clear_last).setOnClickListener(this);
         mTextureView = (AutoFitTextureView) view.findViewById(R.id.texture);
+
+        delayForTakePicture = view.findViewById(R.id.seconds_delay);
 
         mRectangleView = view.findViewById(R.id.rectangle);
         CheckBox checkBoxRes_1_1 = view.findViewById(R.id.resolution1_1);
@@ -470,9 +485,9 @@ public class CameraFragment extends Fragment
         checkBoxRes_1_1.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
             @Override
             public void onCheckedChanged(CompoundButton compoundButton, boolean isChecked) {
-                if(isChecked){
+                if (isChecked) {
                     mRectangleView.setDimension(mRectangleView.DIMENSION_1_1);
-                }else{
+                } else {
                     mRectangleView.setDimension(mRectangleView.DIMENSION_FREE);
                 }
             }
@@ -947,10 +962,69 @@ public class CameraFragment extends Fragment
     public void onClick(View view) {
         switch (view.getId()) {
             case R.id.picture: {
-                takePicture();
+                String delayStr = delayForTakePicture.getText().toString();
+                Log.d("delayValue", delayStr);
+                if(delayStr == null || delayStr.equals("") || delayStr.equals("0"))
+                    takePicture();
+                else{
+                    int delayMilliseconds = Integer.parseInt(delayStr) *1000;
+                    new CountDownTimer(delayMilliseconds, 1000) {
+                        public void onTick(long millisUntilFinished) {
+                            Toast tickToast = Toast.makeText(getActivity(),
+                                    "segundos restantes: " + millisUntilFinished/1000,
+                                    Toast.LENGTH_SHORT);
+
+                            tickToast.show();
+
+                            //showToast("segundos restantes: " + millisUntilFinished/1000);
+                        }
+
+                        public void onFinish() {
+                            takePicture();
+                        }
+                    }.start();
+                }
                 break;
             }
-            //TODO: it's necessary an information management
+            case R.id.clear_last: {
+                Activity activity = getActivity();
+                if (null != activity) {
+                    if(!atLeastOneCapturedImageOnThisSesion) {
+                        new AlertDialog.Builder(activity)
+                                .setMessage("No has hecho ninguna imagen desde que abriste la app")
+                                .setPositiveButton(android.R.string.ok, null)
+                                .show();
+                    } else if (theLastImageWasDeleted){
+                        new AlertDialog.Builder(activity)
+                                .setMessage("Ya has borrado la última imagen que hiciste")
+                                .setPositiveButton(android.R.string.ok, null)
+                                .show();
+                    } else {
+                        new AlertDialog.Builder(activity)
+                                .setMessage("Confirmas que quieres borrar la ultima imagen guardada?")
+                                .setPositiveButton("Sí, borrar", new DialogInterface.OnClickListener() {
+                                    @Override
+                                    public void onClick(DialogInterface dialog, int which) {
+                                        mFile = new File(getActivity().getExternalFilesDir(null), lastUser + File.separator + lastFileName + ".jpg");
+                                        if(mFile.exists()){
+                                            if(mFile.delete()){
+                                                showToast("Deleted: " + lastFileName);
+                                                imgFileDB.deleteImageFile(lastUser, lastFileName);
+                                                theLastImageWasDeleted = true;
+                                            }else{
+                                                showToast("Fail deletion: " + lastFileName);
+                                            }
+                                        }
+
+                                    }
+                                })
+                                .show();
+                    }
+                }
+                break;
+            }
+        }
+        //TODO: it's necessary an information management
             /*
             case R.id.info: {
                 Activity activity = getActivity();
@@ -962,8 +1036,8 @@ public class CameraFragment extends Fragment
                 }
                 break;
             }*/
-        }
     }
+
 
     private void setAutoFlash(CaptureRequest.Builder requestBuilder) {
         if (mFlashSupported) {
@@ -972,174 +1046,184 @@ public class CameraFragment extends Fragment
         }
     }
 
+/**
+ * Saves a JPEG {@link Image} into the specified {@link File}.
+ */
+private static class ImageSaver implements Runnable {
+
     /**
-     * Saves a JPEG {@link Image} into the specified {@link File}.
+     * The JPEG image
      */
-    private static class ImageSaver implements Runnable {
+    private final Image mImage;
+    /**
+     * The file we save the image into.
+     */
 
-        /**
-         * The JPEG image
-         */
-        private final Image mImage;
-        /**
-         * The file we save the image into.
-         */
+    private final String mUserName;
+    private final String mFileName;
 
-        private final String mUserName;
-        private final String mFileName;
+    private final File mFile;
 
-        private final File mFile;
+    private final RectangleView mRectangleView;
 
-        private final RectangleView mRectangleView;
+    private ImageFilesDBHelper mImgDBHelper;
 
-        private ImageFilesDBHelper mImgDBHelper;
+    ImageSaver(Image image, String userName, String fileName, File file, RectangleView rectangleView, ImageFilesDBHelper imgDBHelper) {
+        mImage = image;
+        mUserName = userName;
+        mFileName = fileName;
+        mFile = file;
+        mRectangleView = rectangleView;
+        mImgDBHelper = imgDBHelper;
+    }
 
-        ImageSaver(Image image, String userName, String fileName, File file, RectangleView rectangleView, ImageFilesDBHelper imgDBHelper) {
-            mImage = image;
-            mUserName = userName;
-            mFileName = fileName;
-            mFile = file;
-            mRectangleView = rectangleView;
-            mImgDBHelper = imgDBHelper;
+    @Override
+    public void run() {
+
+        ByteBuffer buffer = mImage.getPlanes()[0].getBuffer();
+        byte[] bytes = new byte[buffer.remaining()];
+        buffer.get(bytes);
+        FileOutputStream output = null;
+        try {
+            output = new FileOutputStream(mFile);
+            output.write(bytes);
+
+            saveEntryInDatabase();
+
+        } catch (IOException e) {
+            e.printStackTrace();
+        } finally {
+            mImage.close();
+            if (null != output) {
+                try {
+                    output.close();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+    }
+
+    private void saveEntryInDatabase() {
+        int imageHeight = mImage.getWidth();
+        int imageWidth = mImage.getHeight();
+
+        Log.i("ImgWidth", String.valueOf(imageWidth));
+        Log.i("ImgHeight", String.valueOf(imageHeight));
+
+        if (mRectangleView != null && mRectangleView.enoughDimension) {
+            int rectHeight = mRectangleView.getHeight();
+            int rectWidth = mRectangleView.getWidth();
+
+            Log.i("RectWidth", String.valueOf(rectWidth));
+            Log.i("RectHeight", String.valueOf(rectHeight));
+
+            float ratio = (float) imageWidth / (float) rectWidth;
+
+            int x1 = (int) (mRectangleView.left * ratio);
+            int y1 = (int) (mRectangleView.top * ratio);
+
+            int x2 = (int) (mRectangleView.right * ratio);
+            Log.i("Ratio", String.valueOf(ratio));
+            Log.i("RectagleX2", String.valueOf(mRectangleView.right));
+            Log.i("RectagleX2", String.valueOf(mRectangleView.right * ratio));
+            int y2;
+
+            if (mRectangleView.dimension == RectangleView.DIMENSION_1_1) {
+                int l = x2 - x1;
+                y2 = y1 + l;
+            } else {
+                y2 = (int) (mRectangleView.bottom * ratio);
+            }
+
+            mImgDBHelper.insertImageFile(mUserName, mFileName, mFile.getAbsolutePath(), imageHeight, imageWidth, x1, y1, x2, y2);
+
+        } else {
+            mImgDBHelper.insertImageFile(mUserName, mFileName, mFile.getAbsolutePath(), imageHeight, imageWidth);
         }
 
-        @Override
-        public void run() {
 
-            ByteBuffer buffer = mImage.getPlanes()[0].getBuffer();
-            byte[] bytes = new byte[buffer.remaining()];
-            buffer.get(bytes);
-            FileOutputStream output = null;
-            try {
-                output = new FileOutputStream(mFile);
-                output.write(bytes);
+    }
 
-                saveEntryInDatabase();
+}
 
-            } catch (IOException e) {
-                e.printStackTrace();
-            } finally {
-                mImage.close();
-                if (null != output) {
-                    try {
-                        output.close();
-                    } catch (IOException e) {
-                        e.printStackTrace();
+/**
+ * Compares two {@code Size}s based on their areas.
+ */
+static class CompareSizesByArea implements Comparator<Size> {
+
+    @Override
+    public int compare(Size lhs, Size rhs) {
+        // We cast here to ensure the multiplications won't overflow
+        return Long.signum((long) lhs.getWidth() * lhs.getHeight() -
+                (long) rhs.getWidth() * rhs.getHeight());
+    }
+
+}
+
+/**
+ * Shows an error message dialog.
+ */
+public static class ErrorDialog extends DialogFragment {
+
+    private static final String ARG_MESSAGE = "message";
+
+    public static ErrorDialog newInstance(String message) {
+        ErrorDialog dialog = new ErrorDialog();
+        Bundle args = new Bundle();
+        args.putString(ARG_MESSAGE, message);
+        dialog.setArguments(args);
+        return dialog;
+    }
+
+    @NonNull
+    @Override
+    public Dialog onCreateDialog(Bundle savedInstanceState) {
+        final Activity activity = getActivity();
+        return new AlertDialog.Builder(activity)
+                .setMessage(getArguments().getString(ARG_MESSAGE))
+                .setPositiveButton(android.R.string.ok, new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialogInterface, int i) {
+                        activity.finish();
                     }
-                }
-            }
-        }
-
-        private void saveEntryInDatabase(){
-
-            if(mRectangleView != null && mRectangleView.enoughDimension){
-                int rectHeight = mRectangleView.getHeight();
-                //int rectWidth = mRectangleView.getWidth();
-
-                float ratio = mImage.getHeight()/rectHeight;
-
-                int x1 = (int) (mRectangleView.left*ratio);
-                int y1 = (int) (mRectangleView.top*ratio);
-
-                int x2 = (int) (mRectangleView.right*ratio);
-
-                int y2;
-
-                if(mRectangleView.dimension == RectangleView.DIMENSION_1_1){
-                    int l = x2 - x1;
-                    y2 = y1 + l;
-                }else{
-                    y2 = (int) (mRectangleView.right*ratio);
-                }
-
-                mImgDBHelper.insertImageFile(mUserName, mFileName, mFile.getAbsolutePath(), mImage.getHeight(), mImage.getWidth(), x1, y1, x2, y2);
-
-            }else {
-                mImgDBHelper.insertImageFile(mUserName, mFileName, mFile.getAbsolutePath(), mImage.getHeight(), mImage.getWidth());
-            }
-
-
-        }
-
+                })
+                .create();
     }
 
-    /**
-     * Compares two {@code Size}s based on their areas.
-     */
-    static class CompareSizesByArea implements Comparator<Size> {
+}
 
-        @Override
-        public int compare(Size lhs, Size rhs) {
-            // We cast here to ensure the multiplications won't overflow
-            return Long.signum((long) lhs.getWidth() * lhs.getHeight() -
-                    (long) rhs.getWidth() * rhs.getHeight());
-        }
+/**
+ * Shows OK/Cancel confirmation dialog about camera permission.
+ */
+public static class ConfirmationDialog extends DialogFragment {
 
-    }
-
-    /**
-     * Shows an error message dialog.
-     */
-    public static class ErrorDialog extends DialogFragment {
-
-        private static final String ARG_MESSAGE = "message";
-
-        public static ErrorDialog newInstance(String message) {
-            ErrorDialog dialog = new ErrorDialog();
-            Bundle args = new Bundle();
-            args.putString(ARG_MESSAGE, message);
-            dialog.setArguments(args);
-            return dialog;
-        }
-
-        @NonNull
-        @Override
-        public Dialog onCreateDialog(Bundle savedInstanceState) {
-            final Activity activity = getActivity();
-            return new AlertDialog.Builder(activity)
-                    .setMessage(getArguments().getString(ARG_MESSAGE))
-                    .setPositiveButton(android.R.string.ok, new DialogInterface.OnClickListener() {
-                        @Override
-                        public void onClick(DialogInterface dialogInterface, int i) {
-                            activity.finish();
-                        }
-                    })
-                    .create();
-        }
-
-    }
-
-    /**
-     * Shows OK/Cancel confirmation dialog about camera permission.
-     */
-    public static class ConfirmationDialog extends DialogFragment {
-
-        @NonNull
-        @Override
-        public Dialog onCreateDialog(Bundle savedInstanceState) {
-            final Fragment parent = getParentFragment();
-            return new AlertDialog.Builder(getActivity())
-                    .setMessage(R.string.camera_permission_required)
-                    .setPositiveButton(android.R.string.ok, new DialogInterface.OnClickListener() {
-                        @Override
-                        public void onClick(DialogInterface dialog, int which) {
-                            parent.requestPermissions(new String[]{Manifest.permission.CAMERA},
-                                    REQUEST_CAMERA_PERMISSION);
-                        }
-                    })
-                    .setNegativeButton(android.R.string.cancel,
-                            new DialogInterface.OnClickListener() {
-                                @Override
-                                public void onClick(DialogInterface dialog, int which) {
-                                    Activity activity = parent.getActivity();
-                                    if (activity != null) {
-                                        activity.finish();
-                                    }
+    @NonNull
+    @Override
+    public Dialog onCreateDialog(Bundle savedInstanceState) {
+        final Fragment parent = getParentFragment();
+        return new AlertDialog.Builder(getActivity())
+                .setMessage(R.string.camera_permission_required)
+                .setPositiveButton(android.R.string.ok, new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialog, int which) {
+                        parent.requestPermissions(new String[]{Manifest.permission.CAMERA},
+                                REQUEST_CAMERA_PERMISSION);
+                    }
+                })
+                .setNegativeButton(android.R.string.cancel,
+                        new DialogInterface.OnClickListener() {
+                            @Override
+                            public void onClick(DialogInterface dialog, int which) {
+                                Activity activity = parent.getActivity();
+                                if (activity != null) {
+                                    activity.finish();
                                 }
-                            })
-                    .create();
-        }
+                            }
+                        })
+                .create();
     }
+}
 
 
 

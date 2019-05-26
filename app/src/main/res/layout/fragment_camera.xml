@@ -3,37 +3,182 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent">
 
-    <com.example.fastlabelcapture.AutoFitTextureView
-        android:id="@+id/texture"
+    <RelativeLayout
+        android:id="@+id/cameraContainer"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_alignParentStart="true"
-        android:layout_alignParentTop="true" />
+        android:layout_alignParentTop="true">
+
+        <com.example.fastlabelcapture.AutoFitTextureView
+            android:id="@+id/texture"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignParentStart="true"
+            android:layout_alignParentTop="true" />
+
+        <com.example.fastlabelcapture.RectangleView
+            android:id="@+id/rectangle"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_alignLeft="@id/texture"
+            android:layout_alignTop="@id/texture"
+            android:layout_alignRight="@id/texture"
+            android:layout_alignBottom="@id/texture"
+            android:adjustViewBounds="true"
+            android:scaleType="centerInside" />
+    </RelativeLayout>
+
 
     <FrameLayout
         android:id="@+id/control"
         android:layout_width="match_parent"
-        android:layout_height="112dp"
-        android:layout_alignParentBottom="true"
+        android:layout_height="wrap_content"
         android:layout_alignParentStart="true"
-        android:background="@color/control_background">
+        android:layout_alignParentBottom="true"
+        android:layout_toRightOf="@id/cameraContainer"
+        android:background="@color/control_background"
+        android:orientation="vertical"
+        android:padding="5dp">
 
-        <Button
-            android:id="@+id/picture"
+        <LinearLayout
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_gravity="center"
-            android:text="@string/picture" />
+            android:layout_gravity="center_vertical"
+            android:orientation="horizontal">
+
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:orientation="vertical">
+
+                <LinearLayout
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:gravity="center"
+                    android:orientation="horizontal">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="@string/user_name"
+                        android:textSize="@dimen/margin_medium" />
+
+                    <EditText
+                        android:id="@+id/userFolderName"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:digits="abcdefghijklmnopqrstuvwxyz1234567890"
+                        android:textSize="@dimen/margin_medium" />
+
+                    <ImageButton
+                        android:id="@+id/userList"
+                        style="@android:style/Widget.Material.Light.Button.Borderless"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:contentDescription="@string/description_info"
+                        android:padding="10dp"
+                        android:src="@drawable/ic_action_info" />
+                </LinearLayout>
+
+                <LinearLayout
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:gravity="center"
+                    android:orientation="horizontal">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="@string/image_label"
+                        android:textSize="@dimen/margin_medium" />
+
+                    <EditText
+                        android:id="@+id/fileName"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:digits="abcdefghijklmnopqrstuvwxyz"
+                        android:maxLength="1"
+                        android:textSize="@dimen/margin_medium" />
+
+                    <ImageButton
+                        android:id="@+id/fileList"
+                        style="@android:style/Widget.Material.Light.Button.Borderless"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:contentDescription="@string/description_info"
+                        android:padding="10dp"
+                        android:src="@drawable/ic_action_info" />
+                </LinearLayout>
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:gravity="center_horizontal"
+                    android:orientation="vertical">
+
+                    <CheckBox
+                        android:id="@+id/resolution1_1"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="@string/resolution1_1" />
+                    <!--
+                    <CheckBox
+                        android:id="@+id/resolution4_3"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="@string/resolution4_3"/>
+                     -->
+                </LinearLayout>
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center_vertical"
+                android:orientation="vertical">
+
+                <Button
+                    android:id="@+id/picture"
+                    android:layout_width="50dp"
+                    android:layout_height="50dp"
+                    android:layout_gravity="center_vertical"
+                    android:background="@drawable/snapshot" />
+
+                <LinearLayout
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="center"
+                    android:orientation="horizontal">
+                    <EditText
+                        android:id="@+id/seconds_delay"
+                        android:text="0"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:digits="1234567890"
+                        android:maxLength="1"
+                        android:textSize="@dimen/margin_medium" />
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="s"
+                        android:textSize="@dimen/margin_medium" />
+
+
+                </LinearLayout>
+
+            </LinearLayout>
+        </LinearLayout>
 
         <ImageButton
-            android:id="@+id/info"
-            android:contentDescription="@string/description_info"
+            android:id="@+id/clear_last"
             style="@android:style/Widget.Material.Light.Button.Borderless"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_gravity="center_vertical|right"
+            android:layout_gravity="center_vertical|end"
+            android:contentDescription="@string/description_info"
             android:padding="20dp"
-            android:src="@drawable/ic_action_info" />
+            android:src="@drawable/ic_clear_black_24dp" />
 
     </FrameLayout>
 

@@ -83,4 +83,16 @@ public class ImageFilesDBHelper extends SQLiteOpenHelper {
 
         db.close();
     }
+
+    public void deleteImageFile(String user, String filename){
+        SQLiteDatabase db = this.getWritableDatabase();
+        String query = "DELETE FROM " + FilesContract.ImageFileEntry.TABLE_NAME + " WHERE "
+                    + FilesContract.ImageFileEntry.USER + " = '" + user + "'" + " AND "
+                    + FilesContract.ImageFileEntry.FILENAME + " = '" + filename + "'";
+
+        db.execSQL(query);
+
+        db.close();
+    }
+
 }
