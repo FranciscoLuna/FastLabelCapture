@@ -2,6 +2,13 @@ package com.example.fastlabelcapture.database;
 
 import android.provider.BaseColumns;
 
+
+
+/**
+ * This Object contains the name and the columns names (attributes) of the SQLite table that
+ * contains the captures information.
+ *
+ */
 public class FilesContract {
 
     public static abstract class ImageFileEntry implements BaseColumns {

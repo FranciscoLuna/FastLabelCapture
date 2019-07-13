@@ -7,6 +7,11 @@ import android.database.sqlite.SQLiteOpenHelper;
 
 public class ImageFilesDBHelper extends SQLiteOpenHelper {
 
+    /**
+     * This object contains the necessary methods for SQLite database creation and transactions.
+     *
+     */
+
     public static final int DATABASE_VERSION = 1;
     public static final String DATABASE_NAME = "ImageFiles.db";
 
@@ -14,8 +19,15 @@ public class ImageFilesDBHelper extends SQLiteOpenHelper {
         super(context, DATABASE_NAME, null, DATABASE_VERSION);
     }
 
+    /**
+     * This method creates the database, including all its tables. This is only invoked if the
+     * database file doesn't exist.
+     * @param sqLiteDatabase
+     */
     @Override
     public void onCreate(SQLiteDatabase sqLiteDatabase) {
+
+        // Create the capture information table
         sqLiteDatabase.execSQL("CREATE TABLE " + FilesContract.ImageFileEntry.TABLE_NAME + " ("
                 + FilesContract.ImageFileEntry._ID + " INTEGER PRIMARY KEY AUTOINCREMENT,"
                 + FilesContract.ImageFileEntry.USER + " TEXT NOT NULL,"
@@ -34,12 +46,27 @@ public class ImageFilesDBHelper extends SQLiteOpenHelper {
                 + "))");
     }
 
+
+    /**
+     * This method updates the database. This is only invoked if the database file version in
+     * the device is inferior to the new version
+     * @param sqLiteDatabase
+     */
     @Override
     public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
         // No hay operaciones
     }
 
 
+    /**
+     * This method insert a new row in the "imagefile" table, when the capture doesn't contain
+     * a bounding box.
+     * @param user
+     * @param filename
+     * @param path
+     * @param height
+     * @param width
+     */
     public void insertImageFile(String user, String filename, String path,
                                 Integer height, Integer width){
 
@@ -59,6 +86,15 @@ public class ImageFilesDBHelper extends SQLiteOpenHelper {
         db.close();
     }
 
+    /**
+     * This method insert a new row in the "imagefile" table, when the capture contains
+     * a bounding box.
+     * @param user
+     * @param filename
+     * @param path
+     * @param height
+     * @param width
+     */
     public void insertImageFile(String user, String filename, String path,
                                 Integer height, Integer width,
                                 Integer pointX1, Integer pointY1,
@@ -84,6 +120,11 @@ public class ImageFilesDBHelper extends SQLiteOpenHelper {
         db.close();
     }
 
+    /**
+     * This method delete a row in the "imagefile" table.
+     * @param user
+     * @param filename
+     */
     public void deleteImageFile(String user, String filename){
         SQLiteDatabase db = this.getWritableDatabase();
         String query = "DELETE FROM " + FilesContract.ImageFileEntry.TABLE_NAME + " WHERE "
