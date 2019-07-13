@@ -27,7 +27,7 @@ public class ImageFilesDBHelper extends SQLiteOpenHelper {
     @Override
     public void onCreate(SQLiteDatabase sqLiteDatabase) {
 
-        // Create the capture information table
+        // Create the imagefile information table
         sqLiteDatabase.execSQL("CREATE TABLE " + FilesContract.ImageFileEntry.TABLE_NAME + " ("
                 + FilesContract.ImageFileEntry._ID + " INTEGER PRIMARY KEY AUTOINCREMENT,"
                 + FilesContract.ImageFileEntry.USER + " TEXT NOT NULL,"
