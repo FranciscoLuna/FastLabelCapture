@@ -275,7 +275,7 @@ public class CameraFragment extends Fragment
         @Override
         public void onImageAvailable(ImageReader reader) {
 
-
+            Log.i("InFileCreation", "Gestionando fichero");
             //----------------------------------- OWN CODE BEGIN ------------------------------------//
 
             // Get user folder and filename from the form input texts
@@ -902,9 +902,8 @@ public class CameraFragment extends Fragment
                     CameraMetadata.CONTROL_AF_TRIGGER_START);
             // Tell #mCaptureCallback to wait for the lock.
             mState = STATE_WAITING_LOCK;
-            mCaptureSession.capture(mPreviewRequestBuilder.build(), mCaptureCallback,
-                    mBackgroundHandler);
-        } catch (CameraAccessException e) {
+            captureStillPicture();
+        } catch (Exception e) {
             e.printStackTrace();
         }
     }
