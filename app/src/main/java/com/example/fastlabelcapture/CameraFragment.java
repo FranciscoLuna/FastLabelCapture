@@ -223,21 +223,47 @@ public class CameraFragment extends Fragment
      * This is the output file for our picture.
      */
     private File mFile;
+
+    //----------------------------------- OWN CODE BEGIN ------------------------------------//
+    /**
+     *
+     */
     private ImageFilesDBHelper imgFileDB;
 
+    /**
+     * Default names for user folder and basename for image file
+     */
     private static String DEFAULT_USER_FOLDER_NAME = "default";
     private static String DEFAULT_FILE_NAME = "undefined";
+
+
+    /**
+     * Form inputs to select the username and filename selection by the user
+     */
     private EditText userFolderName;
     private EditText fileName;
 
+    /**
+     * Attributes that manage the deletion of image files. It can be done with the last image
+     * captured in the current app running (for code simplicity).
+     */
     private boolean atLeastOneCapturedImageOnThisSesion = false;
     private boolean theLastImageWasDeleted = false;
     private String lastFileName;
     private String lastUser;
 
+    /**
+     * Allows to insert the delay seconds before take the pictures, so the users can prepare
+     * themselves to take a good posture.
+     */
     private EditText delayForTakePicture;
 
+    /**
+     * To make a bounding box
+     */
     private RectangleView mRectangleView;
+
+    //------------------------------------- OWN CODE END------------------------------------//
 
     /**
      * This a callback object for the {@link ImageReader}. "onImageAvailable" will be called when a
@@ -249,42 +275,57 @@ public class CameraFragment extends Fragment
         @Override
         public void onImageAvailable(ImageReader reader) {
 
+
+            //----------------------------------- OWN CODE BEGIN ------------------------------------//
+
+            // Get user folder and filename from the form input texts
             String userFolderNameStr = userFolderName.getText().length() != 0 ? userFolderName.getText().toString() : DEFAULT_USER_FOLDER_NAME;
             String fileNameStr = fileName.getText().length() != 0 ? fileName.getText().toString() : DEFAULT_FILE_NAME;
 
             boolean success = false;
             int existingMatchingFiles = 0;
 
+            // Manage if  user folder already exists and create it if not
             File mFolder = new File(getActivity().getExternalFilesDir(null), userFolderNameStr);
             if (!mFolder.exists())
                 success = mFolder.mkdir();
             else
                 success = true;
 
+            // Determine how many files exist with the same basename
             if (success) {
                 File[] listOfFiles = mFolder.listFiles();
-                Log.i("Exist file", String.valueOf(listOfFiles.length));
+                Log.i("Existing files", String.valueOf(listOfFiles.length));
                 for (File file : listOfFiles) {
-                    Log.i("Exist file", file.getName());
+                    Log.i("Existing file", file.getName());
                     if (file.getName().startsWith(fileNameStr)) {
                         existingMatchingFiles += 1;
                     }
                 }
             }
 
+            // The filename is the basename plus the next number
             fileNameStr = fileNameStr + "_" + (existingMatchingFiles + 1);
 
+
+            // Create file
             mFile = new File(getActivity().getExternalFilesDir(null), userFolderNameStr + File.separator + fileNameStr + ".jpg");
 
+            // Call the handler for addition of the image file information in the database and
+            // additional actions
             if (mRectangleView.enoughDimension)
                 mBackgroundHandler.post(new ImageSaver(reader.acquireNextImage(), userFolderNameStr, fileNameStr, mFile, mRectangleView, imgFileDB));
             else
                 mBackgroundHandler.post(new ImageSaver(reader.acquireNextImage(), userFolderNameStr, fileNameStr, mFile, null, imgFileDB));
 
+
+            // Update the information last file stored to allow to delete it
             atLeastOneCapturedImageOnThisSesion = true;
             theLastImageWasDeleted = false;
             lastFileName = fileNameStr;
             lastUser = userFolderNameStr;
+
+            //----------------------------------- OWN CODE END ------------------------------------//
         }
 
     };
@@ -473,6 +514,10 @@ public class CameraFragment extends Fragment
 
     @Override
     public void onViewCreated(final View view, Bundle savedInstanceState) {
+
+        //----------------------------------- OWN CODE BEGIN ------------------------------------//
+
+        // Call all the view elements in the layout
         view.findViewById(R.id.picture).setOnClickListener(this);
         view.findViewById(R.id.clear_last).setOnClickListener(this);
         mTextureView = (AutoFitTextureView) view.findViewById(R.id.texture);
@@ -482,6 +527,7 @@ public class CameraFragment extends Fragment
         mRectangleView = view.findViewById(R.id.rectangle);
         CheckBox checkBoxRes_1_1 = view.findViewById(R.id.resolution1_1);
 
+        // To select if bounding box is a square or not
         checkBoxRes_1_1.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
             @Override
             public void onCheckedChanged(CompoundButton compoundButton, boolean isChecked) {
@@ -501,14 +547,17 @@ public class CameraFragment extends Fragment
 
         //cameraContainer.addView(mRectangleView);
         /**/
+        //----------------------------------- OWN CODE END ------------------------------------//
+
     }
 
     @Override
     public void onActivityCreated(Bundle savedInstanceState) {
         super.onActivityCreated(savedInstanceState);
-
+        //----------------------------------- OWN CODE BEGIN ------------------------------------//
+        // Instance the database file access
         imgFileDB = new ImageFilesDBHelper(getActivity());
-
+        //----------------------------------- OWN CODE END ------------------------------------//
     }
 
     @Override
@@ -962,11 +1011,15 @@ public class CameraFragment extends Fragment
     public void onClick(View view) {
         switch (view.getId()) {
             case R.id.picture: {
+
+                //----------------------------------- OWN CODE BEGIN ------------------------------------//
                 String delayStr = delayForTakePicture.getText().toString();
                 Log.d("delayValue", delayStr);
+
                 if(delayStr == null || delayStr.equals("") || delayStr.equals("0"))
                     takePicture();
                 else{
+                    // To make a countdown and take a picture at the end
                     int delayMilliseconds = Integer.parseInt(delayStr) *1000;
                     new CountDownTimer(delayMilliseconds, 1000) {
                         public void onTick(long millisUntilFinished) {
@@ -985,7 +1038,10 @@ public class CameraFragment extends Fragment
                     }.start();
                 }
                 break;
+                //----------------------------------- OWN CODE END ------------------------------------//
             }
+            //----------------------------------- OWN CODE BEGIN ------------------------------------//
+            // To clear the last image
             case R.id.clear_last: {
                 Activity activity = getActivity();
                 if (null != activity) {
@@ -1023,6 +1079,7 @@ public class CameraFragment extends Fragment
                 }
                 break;
             }
+            //----------------------------------- OWN CODE END ------------------------------------//
         }
         //TODO: it's necessary an information management
             /*
@@ -1051,6 +1108,7 @@ public class CameraFragment extends Fragment
  */
 private static class ImageSaver implements Runnable {
 
+
     /**
      * The JPEG image
      */
@@ -1059,6 +1117,8 @@ private static class ImageSaver implements Runnable {
      * The file we save the image into.
      */
 
+    //----------------------------------- OWN CODE BEGIN ------------------------------------//
+    // Necessary params to save the image file and the information in the database
     private final String mUserName;
     private final String mFileName;
 
@@ -1076,7 +1136,7 @@ private static class ImageSaver implements Runnable {
         mRectangleView = rectangleView;
         mImgDBHelper = imgDBHelper;
     }
-
+    //----------------------------------- OWN CODE END ------------------------------------//
     @Override
     public void run() {
 
@@ -1104,6 +1164,14 @@ private static class ImageSaver implements Runnable {
         }
     }
 
+
+
+    //----------------------------------- OWN CODE BEGIN ------------------------------------//
+
+    /**
+     * This method makes the dimension conversion from bounding box in the image viewer to the
+     * image file dimensions. Finally, it saves the information in the database
+     */
     private void saveEntryInDatabase() {
         int imageHeight = mImage.getWidth();
         int imageWidth = mImage.getHeight();
@@ -1141,10 +1209,8 @@ private static class ImageSaver implements Runnable {
         } else {
             mImgDBHelper.insertImageFile(mUserName, mFileName, mFile.getAbsolutePath(), imageHeight, imageWidth);
         }
-
-
     }
-
+    //----------------------------------- OWN CODE END ------------------------------------//
 }
 
 /**

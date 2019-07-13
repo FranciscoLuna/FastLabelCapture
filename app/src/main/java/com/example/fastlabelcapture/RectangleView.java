@@ -10,6 +10,9 @@ import android.util.AttributeSet;
 import android.view.MotionEvent;
 import android.view.View;
 
+/**
+ * This class create a drawable dynamic box by touching the screen.
+ */
 public class RectangleView extends View {
 
     Point pointInit = null;
@@ -27,6 +30,10 @@ public class RectangleView extends View {
     Paint paint;
     Canvas canvas;
 
+    /**
+     * Basic constructor
+     * @param context
+     */
     public RectangleView(Context context) {
         super(context);
         paint = new Paint();
@@ -34,6 +41,11 @@ public class RectangleView extends View {
         canvas = new Canvas();
     }
 
+    /**
+     * Constructor that allows to define a set of attributes
+     * @param context
+     * @param attrs
+     */
     public RectangleView(Context context, @Nullable AttributeSet attrs) {
         super(context, attrs);
         paint = new Paint();
@@ -41,6 +53,12 @@ public class RectangleView extends View {
         canvas = new Canvas();
     }
 
+    /**
+     * Constructor that allows to define a set of attributes and the style
+     * @param context
+     * @param attrs
+     * @param defStyleAttr
+     */
     public RectangleView(Context context, @Nullable AttributeSet attrs, int defStyleAttr) {
         super(context, attrs, defStyleAttr);
         paint = new Paint();
@@ -48,12 +66,21 @@ public class RectangleView extends View {
         canvas = new Canvas();
     }
 
+    /**
+     * Method to determine if the box have a square shape or free dimension relation.
+     * @param dimension
+     */
     public void setDimension(int dimension){
         if(Math.abs(dimension) < 3){
             this.dimension = dimension;
         }
     }
 
+    /**
+     * This method take the data obtained from @onTouchEvent to determine the position and shape
+     * of the square.
+     * @param canvas
+     */
     @Override
     protected void onDraw(Canvas canvas) {
 
@@ -61,6 +88,7 @@ public class RectangleView extends View {
         if(pointInit == null)
             return;
 
+        // Manage the creation of a square if it is the selected dimension
         if(dimension == DIMENSION_1_1){
             int height = Math.abs(pointEnd.y - pointInit.y);
             int width = Math.abs(pointEnd.x - pointInit.x);
@@ -71,6 +99,7 @@ public class RectangleView extends View {
             }
         }
 
+        // To manage if user draw the box to up or left
         left = pointInit.x < pointEnd.x ? pointInit.x : pointEnd.x;
         top = pointInit.y < pointEnd.y ? pointInit.y : pointEnd.y;
         right = pointInit.x > pointEnd.x ? pointInit.x : pointEnd.x;
@@ -78,7 +107,7 @@ public class RectangleView extends View {
 
         //Log.i("RECT", "(" + left + "," + top + "," + right + "," + bottom + ")");
 
-
+        // The short rectangles are not drawn.
         if(right - left >= 30 && bottom - top >= 30) {
 
             // Creando el cuadrado
@@ -102,6 +131,11 @@ public class RectangleView extends View {
 
     }
 
+    /**
+     * This event handles the finger position in the screen when it's touched
+     * @param event
+     * @return
+     */
     @Override
     public boolean onTouchEvent(MotionEvent event) {
         int eventAction = event.getAction();
@@ -110,6 +144,7 @@ public class RectangleView extends View {
         int Y = (int) event.getY();
 
         switch (eventAction){
+            // When start to touch
             case MotionEvent.ACTION_DOWN:
 
                 //initialize rectangle.
@@ -124,6 +159,7 @@ public class RectangleView extends View {
                 break;
             case MotionEvent.ACTION_UP:
                 break;
+            // During the finger movement while the finger continues touching
             case MotionEvent.ACTION_MOVE:
                 pointEnd.x = X;
                 pointEnd.y = Y;

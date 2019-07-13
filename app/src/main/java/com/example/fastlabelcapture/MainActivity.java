@@ -3,7 +3,11 @@ package com.example.fastlabelcapture;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
 
+/**
+ * This activity contains the camera capture fragment
+ */
 public class MainActivity extends AppCompatActivity {
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
