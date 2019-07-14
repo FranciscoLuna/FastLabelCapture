@@ -27,6 +27,7 @@ import android.media.Image;
 import android.media.ImageReader;
 import android.os.Bundle;
 import android.os.CountDownTimer;
+import android.os.Environment;
 import android.os.Handler;
 import android.os.HandlerThread;
 import android.support.annotation.NonNull;
@@ -50,9 +51,11 @@ import android.widget.Toast;
 import com.example.fastlabelcapture.database.ImageFilesDBHelper;
 
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.nio.channels.FileChannel;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -235,6 +238,10 @@ public class CameraFragment extends Fragment
      */
     private static String DEFAULT_USER_FOLDER_NAME = "default";
     private static String DEFAULT_FILE_NAME = "undefined";
+    /**
+     * External database folder
+     */
+    private static String DATABASE_FOLDER_NAME = "database";
 
 
     /**
@@ -431,10 +438,51 @@ public class CameraFragment extends Fragment
     };
 
 
+    //----------------------------------- OWN CODE BEGIN ------------------------------------//
+
+    private void copyDatabaseOnPublicDirectory(){
+
+        Boolean db_folder_creation_success;
+
+        File externalFolder = new File(getActivity().getExternalFilesDir(null), DATABASE_FOLDER_NAME);
+
+        if (!externalFolder.exists())
+            db_folder_creation_success = externalFolder.mkdir();
+        else
+            db_folder_creation_success = true;
+
+        if(db_folder_creation_success) {
+
+            File data = Environment.getDataDirectory();
+            FileChannel source;
+            FileChannel destination;
+            String currentDBPath = "/data/com.example.fastlabelcapture/databases/ImageFiles.db";
+            String backupDBPath = "ImageFiles.db";
+            File currentDB = new File(data, currentDBPath);
+            File backupDB = new File(externalFolder, backupDBPath);
+            try {
+                source = new FileInputStream(currentDB).getChannel();
+                destination = new FileOutputStream(backupDB).getChannel();
+                destination.transferFrom(source, 0, source.size());
+                source.close();
+                destination.close();
+                Toast.makeText(getActivity(), "DB Exported!", Toast.LENGTH_LONG).show();
+            } catch (IOException e) {
+                Toast.makeText(getActivity(), String.format("DB %s not found!", currentDBPath), Toast.LENGTH_LONG).show();
+                Log.i("StorageError", "A problem with the db exterla storage happens");
+                e.printStackTrace();
+            }
+        }else
+            Toast.makeText(getActivity(), String.format("Cannot create folder %s", DATABASE_FOLDER_NAME), Toast.LENGTH_LONG).show();
+    }
+
+
     //TODO
     private void updateFileName() {
 
     }
+
+    //------------------------------------ OWN CODE END -------------------------------------//
 
     /**
      * Shows a {@link Toast} on the UI thread.
@@ -520,6 +568,7 @@ public class CameraFragment extends Fragment
         // Call all the view elements in the layout
         view.findViewById(R.id.picture).setOnClickListener(this);
         view.findViewById(R.id.clear_last).setOnClickListener(this);
+        view.findViewById(R.id.db_external_storage).setOnClickListener(this);
         mTextureView = (AutoFitTextureView) view.findViewById(R.id.texture);
 
         delayForTakePicture = view.findViewById(R.id.seconds_delay);
@@ -1010,6 +1059,7 @@ public class CameraFragment extends Fragment
     public void onClick(View view) {
         switch (view.getId()) {
             case R.id.picture: {
+                Log.i("SWITCH_CASE_PICT", "Take photo requested");
 
                 //----------------------------------- OWN CODE BEGIN ------------------------------------//
                 String delayStr = delayForTakePicture.getText().toString();
@@ -1042,6 +1092,7 @@ public class CameraFragment extends Fragment
             //----------------------------------- OWN CODE BEGIN ------------------------------------//
             // To clear the last image
             case R.id.clear_last: {
+                Log.i("SWITCH_CASE_REFI", "Remove last file requested");
                 Activity activity = getActivity();
                 if (null != activity) {
                     if(!atLeastOneCapturedImageOnThisSesion) {
@@ -1078,6 +1129,13 @@ public class CameraFragment extends Fragment
                 }
                 break;
             }
+            case R.id.db_external_storage: {
+                Log.i("SWITCH_CASE_EXTDB", "running db external storing");
+                copyDatabaseOnPublicDirectory();
+                break;
+            }
+            default:
+                break;
             //----------------------------------- OWN CODE END ------------------------------------//
         }
         //TODO: it's necessary an information management
