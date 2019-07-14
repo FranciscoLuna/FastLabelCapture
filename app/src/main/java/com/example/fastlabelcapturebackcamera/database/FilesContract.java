@@ -1,4 +1,4 @@
-package com.example.fastlabelcapture.database;
+package com.example.fastlabelcapturebackcamera.database;
 
 import android.provider.BaseColumns;
 

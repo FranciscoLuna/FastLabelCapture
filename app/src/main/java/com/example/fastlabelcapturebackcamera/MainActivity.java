@@ -1,4 +1,4 @@
-package com.example.fastlabelcapture;
+package com.example.fastlabelcapturebackcamera;
 
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;

@@ -1,4 +1,4 @@
-package com.example.fastlabelcapture;
+package com.example.fastlabelcapturebackcamera;
 
 import android.content.Intent;
 import android.os.Bundle;

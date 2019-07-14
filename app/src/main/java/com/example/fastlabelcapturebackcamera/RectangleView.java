@@ -1,4 +1,4 @@
-package com.example.fastlabelcapture;
+package com.example.fastlabelcapturebackcamera;
 
 import android.content.Context;
 import android.graphics.Canvas;
