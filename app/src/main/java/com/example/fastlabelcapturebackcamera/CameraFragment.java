@@ -27,6 +27,7 @@ import android.media.Image;
 import android.media.ImageReader;
 import android.os.Bundle;
 import android.os.CountDownTimer;
+import android.os.Environment;
 import android.os.Handler;
 import android.os.HandlerThread;
 import android.support.annotation.NonNull;
@@ -50,9 +51,11 @@ import android.widget.Toast;
 import com.example.fastlabelcapturebackcamera.database.ImageFilesDBHelper;
 
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.nio.channels.FileChannel;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -235,6 +238,10 @@ public class CameraFragment extends Fragment
      */
     private static String DEFAULT_USER_FOLDER_NAME = "default";
     private static String DEFAULT_FILE_NAME = "undefined";
+    /**
+     * External database folder
+     */
+    private static String DATABASE_FOLDER_NAME = "database";
 
 
     /**
@@ -431,10 +438,51 @@ public class CameraFragment extends Fragment
     };
 
 
+    //----------------------------------- OWN CODE BEGIN ------------------------------------//
+
+    private void copyDatabaseOnPublicDirectory(){
+
+        Boolean db_folder_creation_success;
+
+        File externalFolder = new File(getActivity().getExternalFilesDir(null), DATABASE_FOLDER_NAME);
+
+        if (!externalFolder.exists())
+            db_folder_creation_success = externalFolder.mkdir();
+        else
+            db_folder_creation_success = true;
+
+        if(db_folder_creation_success) {
+
+            File data = Environment.getDataDirectory();
+            FileChannel source;
+            FileChannel destination;
+            String currentDBPath = "/data/com.example.fastlabelcapturebackcamera/databases/ImageFiles.db";
+            String backupDBPath = "ImageFiles.db";
+            File currentDB = new File(data, currentDBPath);
+            File backupDB = new File(externalFolder, backupDBPath);
+            try {
+                source = new FileInputStream(currentDB).getChannel();
+                destination = new FileOutputStream(backupDB).getChannel();
+                destination.transferFrom(source, 0, source.size());
+                source.close();
+                destination.close();
+                Toast.makeText(getActivity(), "DB Exported!", Toast.LENGTH_LONG).show();
+            } catch (IOException e) {
+                Toast.makeText(getActivity(), String.format("DB %s not found!", currentDBPath), Toast.LENGTH_LONG).show();
+                Log.i("StorageError", "A problem with the db exterla storage happens");
+                e.printStackTrace();
+            }
+        }else
+            Toast.makeText(getActivity(), String.format("Cannot create folder %s", DATABASE_FOLDER_NAME), Toast.LENGTH_LONG).show();
+    }
+
+
     //TODO
     private void updateFileName() {
 
     }
+
+    //------------------------------------ OWN CODE END -------------------------------------//
 
     /**
      * Shows a {@link Toast} on the UI thread.
@@ -520,6 +568,7 @@ public class CameraFragment extends Fragment
         // Call all the view elements in the layout
         view.findViewById(R.id.picture).setOnClickListener(this);
         view.findViewById(R.id.clear_last).setOnClickListener(this);
+        view.findViewById(R.id.db_external_storage).setOnClickListener(this);
         mTextureView = (AutoFitTextureView) view.findViewById(R.id.texture);
 
         delayForTakePicture = view.findViewById(R.id.seconds_delay);
@@ -619,7 +668,7 @@ public class CameraFragment extends Fragment
                 CameraCharacteristics characteristics
                         = manager.getCameraCharacteristics(cameraId);
 
-                // We use a front facing camera in this sample.
+                // We use a back facing camera in this sample.
                 Integer facing = characteristics.get(CameraCharacteristics.LENS_FACING);
                 if (facing != null && facing == CameraCharacteristics.LENS_FACING_FRONT) {
                     continue;
@@ -1010,6 +1059,7 @@ public class CameraFragment extends Fragment
     public void onClick(View view) {
         switch (view.getId()) {
             case R.id.picture: {
+                Log.i("SWITCH_CASE_PICT", "Take photo requested");
 
                 //----------------------------------- OWN CODE BEGIN ------------------------------------//
                 String delayStr = delayForTakePicture.getText().toString();
@@ -1042,6 +1092,7 @@ public class CameraFragment extends Fragment
             //----------------------------------- OWN CODE BEGIN ------------------------------------//
             // To clear the last image
             case R.id.clear_last: {
+                Log.i("SWITCH_CASE_REFI", "Remove last file requested");
                 Activity activity = getActivity();
                 if (null != activity) {
                     if(!atLeastOneCapturedImageOnThisSesion) {
@@ -1078,6 +1129,13 @@ public class CameraFragment extends Fragment
                 }
                 break;
             }
+            case R.id.db_external_storage: {
+                Log.i("SWITCH_CASE_EXTDB", "running db external storing");
+                copyDatabaseOnPublicDirectory();
+                break;
+            }
+            default:
+                break;
             //----------------------------------- OWN CODE END ------------------------------------//
         }
         //TODO: it's necessary an information management
@@ -1102,193 +1160,193 @@ public class CameraFragment extends Fragment
         }
     }
 
-/**
- * Saves a JPEG {@link Image} into the specified {@link File}.
- */
-private static class ImageSaver implements Runnable {
-
-
     /**
-     * The JPEG image
+     * Saves a JPEG {@link Image} into the specified {@link File}.
      */
-    private final Image mImage;
-    /**
-     * The file we save the image into.
-     */
+    private static class ImageSaver implements Runnable {
 
-    //----------------------------------- OWN CODE BEGIN ------------------------------------//
-    // Necessary params to save the image file and the information in the database
-    private final String mUserName;
-    private final String mFileName;
 
-    private final File mFile;
+        /**
+         * The JPEG image
+         */
+        private final Image mImage;
+        /**
+         * The file we save the image into.
+         */
 
-    private final RectangleView mRectangleView;
+        //----------------------------------- OWN CODE BEGIN ------------------------------------//
+        // Necessary params to save the image file and the information in the database
+        private final String mUserName;
+        private final String mFileName;
 
-    private ImageFilesDBHelper mImgDBHelper;
+        private final File mFile;
 
-    ImageSaver(Image image, String userName, String fileName, File file, RectangleView rectangleView, ImageFilesDBHelper imgDBHelper) {
-        mImage = image;
-        mUserName = userName;
-        mFileName = fileName;
-        mFile = file;
-        mRectangleView = rectangleView;
-        mImgDBHelper = imgDBHelper;
-    }
-    //----------------------------------- OWN CODE END ------------------------------------//
-    @Override
-    public void run() {
+        private final RectangleView mRectangleView;
 
-        ByteBuffer buffer = mImage.getPlanes()[0].getBuffer();
-        byte[] bytes = new byte[buffer.remaining()];
-        buffer.get(bytes);
-        FileOutputStream output = null;
-        try {
-            output = new FileOutputStream(mFile);
-            output.write(bytes);
+        private ImageFilesDBHelper mImgDBHelper;
 
-            saveEntryInDatabase();
+        ImageSaver(Image image, String userName, String fileName, File file, RectangleView rectangleView, ImageFilesDBHelper imgDBHelper) {
+            mImage = image;
+            mUserName = userName;
+            mFileName = fileName;
+            mFile = file;
+            mRectangleView = rectangleView;
+            mImgDBHelper = imgDBHelper;
+        }
+        //----------------------------------- OWN CODE END ------------------------------------//
+        @Override
+        public void run() {
 
-        } catch (IOException e) {
-            e.printStackTrace();
-        } finally {
-            mImage.close();
-            if (null != output) {
-                try {
-                    output.close();
-                } catch (IOException e) {
-                    e.printStackTrace();
+            ByteBuffer buffer = mImage.getPlanes()[0].getBuffer();
+            byte[] bytes = new byte[buffer.remaining()];
+            buffer.get(bytes);
+            FileOutputStream output = null;
+            try {
+                output = new FileOutputStream(mFile);
+                output.write(bytes);
+
+                saveEntryInDatabase();
+
+            } catch (IOException e) {
+                e.printStackTrace();
+            } finally {
+                mImage.close();
+                if (null != output) {
+                    try {
+                        output.close();
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
                 }
             }
         }
+
+
+
+        //----------------------------------- OWN CODE BEGIN ------------------------------------//
+
+        /**
+         * This method makes the dimension conversion from bounding box in the image viewer to the
+         * image file dimensions. Finally, it saves the information in the database
+         */
+        private void saveEntryInDatabase() {
+            int imageHeight = mImage.getWidth();
+            int imageWidth = mImage.getHeight();
+
+            Log.i("ImgWidth", String.valueOf(imageWidth));
+            Log.i("ImgHeight", String.valueOf(imageHeight));
+
+            if (mRectangleView != null && mRectangleView.enoughDimension) {
+                int rectHeight = mRectangleView.getHeight();
+                int rectWidth = mRectangleView.getWidth();
+
+                Log.i("RectWidth", String.valueOf(rectWidth));
+                Log.i("RectHeight", String.valueOf(rectHeight));
+
+                float ratio = (float) imageWidth / (float) rectWidth;
+
+                int x1 = (int) (mRectangleView.left * ratio);
+                int y1 = (int) (mRectangleView.top * ratio);
+
+                int x2 = (int) (mRectangleView.right * ratio);
+                Log.i("Ratio", String.valueOf(ratio));
+                Log.i("RectagleX2", String.valueOf(mRectangleView.right));
+                Log.i("RectagleX2", String.valueOf(mRectangleView.right * ratio));
+                int y2;
+
+                if (mRectangleView.dimension == RectangleView.DIMENSION_1_1) {
+                    int l = x2 - x1;
+                    y2 = y1 + l;
+                } else {
+                    y2 = (int) (mRectangleView.bottom * ratio);
+                }
+
+                mImgDBHelper.insertImageFile(mUserName, mFileName, mFile.getAbsolutePath(), imageHeight, imageWidth, x1, y1, x2, y2);
+
+            } else {
+                mImgDBHelper.insertImageFile(mUserName, mFileName, mFile.getAbsolutePath(), imageHeight, imageWidth);
+            }
+        }
+        //----------------------------------- OWN CODE END ------------------------------------//
     }
-
-
-
-    //----------------------------------- OWN CODE BEGIN ------------------------------------//
 
     /**
-     * This method makes the dimension conversion from bounding box in the image viewer to the
-     * image file dimensions. Finally, it saves the information in the database
+     * Compares two {@code Size}s based on their areas.
      */
-    private void saveEntryInDatabase() {
-        int imageHeight = mImage.getWidth();
-        int imageWidth = mImage.getHeight();
+    static class CompareSizesByArea implements Comparator<Size> {
 
-        Log.i("ImgWidth", String.valueOf(imageWidth));
-        Log.i("ImgHeight", String.valueOf(imageHeight));
+        @Override
+        public int compare(Size lhs, Size rhs) {
+            // We cast here to ensure the multiplications won't overflow
+            return Long.signum((long) lhs.getWidth() * lhs.getHeight() -
+                    (long) rhs.getWidth() * rhs.getHeight());
+        }
 
-        if (mRectangleView != null && mRectangleView.enoughDimension) {
-            int rectHeight = mRectangleView.getHeight();
-            int rectWidth = mRectangleView.getWidth();
+    }
 
-            Log.i("RectWidth", String.valueOf(rectWidth));
-            Log.i("RectHeight", String.valueOf(rectHeight));
+    /**
+     * Shows an error message dialog.
+     */
+    public static class ErrorDialog extends DialogFragment {
 
-            float ratio = (float) imageWidth / (float) rectWidth;
+        private static final String ARG_MESSAGE = "message";
 
-            int x1 = (int) (mRectangleView.left * ratio);
-            int y1 = (int) (mRectangleView.top * ratio);
+        public static ErrorDialog newInstance(String message) {
+            ErrorDialog dialog = new ErrorDialog();
+            Bundle args = new Bundle();
+            args.putString(ARG_MESSAGE, message);
+            dialog.setArguments(args);
+            return dialog;
+        }
 
-            int x2 = (int) (mRectangleView.right * ratio);
-            Log.i("Ratio", String.valueOf(ratio));
-            Log.i("RectagleX2", String.valueOf(mRectangleView.right));
-            Log.i("RectagleX2", String.valueOf(mRectangleView.right * ratio));
-            int y2;
+        @NonNull
+        @Override
+        public Dialog onCreateDialog(Bundle savedInstanceState) {
+            final Activity activity = getActivity();
+            return new AlertDialog.Builder(activity)
+                    .setMessage(getArguments().getString(ARG_MESSAGE))
+                    .setPositiveButton(android.R.string.ok, new DialogInterface.OnClickListener() {
+                        @Override
+                        public void onClick(DialogInterface dialogInterface, int i) {
+                            activity.finish();
+                        }
+                    })
+                    .create();
+        }
 
-            if (mRectangleView.dimension == RectangleView.DIMENSION_1_1) {
-                int l = x2 - x1;
-                y2 = y1 + l;
-            } else {
-                y2 = (int) (mRectangleView.bottom * ratio);
-            }
+    }
 
-            mImgDBHelper.insertImageFile(mUserName, mFileName, mFile.getAbsolutePath(), imageHeight, imageWidth, x1, y1, x2, y2);
+    /**
+     * Shows OK/Cancel confirmation dialog about camera permission.
+     */
+    public static class ConfirmationDialog extends DialogFragment {
 
-        } else {
-            mImgDBHelper.insertImageFile(mUserName, mFileName, mFile.getAbsolutePath(), imageHeight, imageWidth);
+        @NonNull
+        @Override
+        public Dialog onCreateDialog(Bundle savedInstanceState) {
+            final Fragment parent = getParentFragment();
+            return new AlertDialog.Builder(getActivity())
+                    .setMessage(R.string.camera_permission_required)
+                    .setPositiveButton(android.R.string.ok, new DialogInterface.OnClickListener() {
+                        @Override
+                        public void onClick(DialogInterface dialog, int which) {
+                            parent.requestPermissions(new String[]{Manifest.permission.CAMERA},
+                                    REQUEST_CAMERA_PERMISSION);
+                        }
+                    })
+                    .setNegativeButton(android.R.string.cancel,
+                            new DialogInterface.OnClickListener() {
+                                @Override
+                                public void onClick(DialogInterface dialog, int which) {
+                                    Activity activity = parent.getActivity();
+                                    if (activity != null) {
+                                        activity.finish();
+                                    }
+                                }
+                            })
+                    .create();
         }
     }
-    //----------------------------------- OWN CODE END ------------------------------------//
-}
-
-/**
- * Compares two {@code Size}s based on their areas.
- */
-static class CompareSizesByArea implements Comparator<Size> {
-
-    @Override
-    public int compare(Size lhs, Size rhs) {
-        // We cast here to ensure the multiplications won't overflow
-        return Long.signum((long) lhs.getWidth() * lhs.getHeight() -
-                (long) rhs.getWidth() * rhs.getHeight());
-    }
-
-}
-
-/**
- * Shows an error message dialog.
- */
-public static class ErrorDialog extends DialogFragment {
-
-    private static final String ARG_MESSAGE = "message";
-
-    public static ErrorDialog newInstance(String message) {
-        ErrorDialog dialog = new ErrorDialog();
-        Bundle args = new Bundle();
-        args.putString(ARG_MESSAGE, message);
-        dialog.setArguments(args);
-        return dialog;
-    }
-
-    @NonNull
-    @Override
-    public Dialog onCreateDialog(Bundle savedInstanceState) {
-        final Activity activity = getActivity();
-        return new AlertDialog.Builder(activity)
-                .setMessage(getArguments().getString(ARG_MESSAGE))
-                .setPositiveButton(android.R.string.ok, new DialogInterface.OnClickListener() {
-                    @Override
-                    public void onClick(DialogInterface dialogInterface, int i) {
-                        activity.finish();
-                    }
-                })
-                .create();
-    }
-
-}
-
-/**
- * Shows OK/Cancel confirmation dialog about camera permission.
- */
-public static class ConfirmationDialog extends DialogFragment {
-
-    @NonNull
-    @Override
-    public Dialog onCreateDialog(Bundle savedInstanceState) {
-        final Fragment parent = getParentFragment();
-        return new AlertDialog.Builder(getActivity())
-                .setMessage(R.string.camera_permission_required)
-                .setPositiveButton(android.R.string.ok, new DialogInterface.OnClickListener() {
-                    @Override
-                    public void onClick(DialogInterface dialog, int which) {
-                        parent.requestPermissions(new String[]{Manifest.permission.CAMERA},
-                                REQUEST_CAMERA_PERMISSION);
-                    }
-                })
-                .setNegativeButton(android.R.string.cancel,
-                        new DialogInterface.OnClickListener() {
-                            @Override
-                            public void onClick(DialogInterface dialog, int which) {
-                                Activity activity = parent.getActivity();
-                                if (activity != null) {
-                                    activity.finish();
-                                }
-                            }
-                        })
-                .create();
-    }
-}
 
 
 

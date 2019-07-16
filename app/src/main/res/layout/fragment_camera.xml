@@ -38,24 +38,23 @@
         android:layout_alignParentBottom="true"
         android:layout_toRightOf="@id/cameraContainer"
         android:background="@color/control_background"
-        android:orientation="vertical"
-        android:padding="5dp">
+        android:orientation="vertical">
 
         <LinearLayout
-            android:layout_width="wrap_content"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_gravity="center_vertical"
+            android:layout_margin="5dp"
             android:orientation="horizontal">
 
             <LinearLayout
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
+                android:layout_weight="0"
                 android:orientation="vertical">
 
                 <LinearLayout
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:gravity="center"
                     android:orientation="horizontal">
 
                     <TextView
@@ -71,20 +70,19 @@
                         android:digits="abcdefghijklmnopqrstuvwxyz1234567890"
                         android:textSize="@dimen/margin_medium" />
 
-                    <ImageButton
+                    <!--<ImageButton
                         android:id="@+id/userList"
                         style="@android:style/Widget.Material.Light.Button.Borderless"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:contentDescription="@string/description_info"
                         android:padding="10dp"
-                        android:src="@drawable/ic_action_info" />
+                        android:src="@drawable/ic_action_info" />-->
                 </LinearLayout>
 
                 <LinearLayout
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:gravity="center"
                     android:orientation="horizontal">
 
                     <TextView
@@ -101,20 +99,19 @@
                         android:maxLength="1"
                         android:textSize="@dimen/margin_medium" />
 
-                    <ImageButton
+                    <!--<ImageButton
                         android:id="@+id/fileList"
                         style="@android:style/Widget.Material.Light.Button.Borderless"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:contentDescription="@string/description_info"
                         android:padding="10dp"
-                        android:src="@drawable/ic_action_info" />
+                        android:src="@drawable/ic_action_info" />-->
                 </LinearLayout>
 
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:gravity="center_horizontal"
                     android:orientation="vertical">
 
                     <CheckBox
@@ -132,17 +129,19 @@
                 </LinearLayout>
             </LinearLayout>
 
+
             <LinearLayout
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_gravity="center_vertical"
+                android:layout_weight="1"
                 android:orientation="vertical">
 
                 <Button
                     android:id="@+id/picture"
                     android:layout_width="50dp"
                     android:layout_height="50dp"
-                    android:layout_gravity="center_vertical"
+                    android:layout_gravity="center"
                     android:background="@drawable/snapshot" />
 
                 <LinearLayout
@@ -150,14 +149,16 @@
                     android:layout_height="wrap_content"
                     android:layout_gravity="center"
                     android:orientation="horizontal">
+
                     <EditText
                         android:id="@+id/seconds_delay"
-                        android:text="0"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:digits="1234567890"
                         android:maxLength="1"
+                        android:text="0"
                         android:textSize="@dimen/margin_medium" />
+
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
@@ -168,17 +169,40 @@
                 </LinearLayout>
 
             </LinearLayout>
-        </LinearLayout>
 
-        <ImageButton
-            android:id="@+id/clear_last"
-            style="@android:style/Widget.Material.Light.Button.Borderless"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_gravity="center_vertical|end"
-            android:contentDescription="@string/description_info"
-            android:padding="20dp"
-            android:src="@drawable/ic_clear_black_24dp" />
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_weight="0"
+                android:orientation="vertical"
+                android:padding="5dp">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Base de datos" />
+
+                <ImageButton
+                    android:id="@+id/clear_last"
+                    style="@android:style/Widget.Material.Light.Button.Borderless"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:contentDescription="@string/description_info"
+                    android:padding="10dp"
+                    android:src="@drawable/ic_clear_black_24dp" />
+
+
+                <ImageButton
+                    android:id="@+id/db_external_storage"
+                    style="@android:style/Widget.Material.Light.Button.Borderless"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:contentDescription="guardar bd en carpeta externa"
+                    android:padding="10dp"
+                    android:src="@drawable/ic_save_black_24dp" />
+
+            </LinearLayout>
+        </LinearLayout>
 
     </FrameLayout>
 

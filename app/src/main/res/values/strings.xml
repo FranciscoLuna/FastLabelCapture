@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">FastLabelCapture</string>
+    <string name="app_name">FastLabelCaptureBackCamera</string>
 
     <string name="picture">Foto</string>
     <string name="description_info">Info</string>
